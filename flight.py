@@ -8,19 +8,14 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 
-# ------------------------------------------------------------------------------
-# STEP 1: Page Configuration
-# ------------------------------------------------------------------------------
 st.set_page_config(page_title="Flight Delay AI", page_icon="✈️", layout="wide")
 st.title("✈️ Flight Delay Prediction System")
 st.write("A Supervised Machine Learning model (Random Forest) that predicts if a flight will be delayed based on weather, time, and route.")
 
-# ------------------------------------------------------------------------------
-# STEP 2: Generate Training Data & Train Model (Cached for Performance)
-# ------------------------------------------------------------------------------
+
 @st.cache_resource
 def train_model():
-    # 1. Generate realistic synthetic data for the model to learn from
+    
     np.random.seed(42)
     n_samples = 2000
     
@@ -30,18 +25,18 @@ def train_model():
     weather = np.random.choice(["Clear", "Cloudy", "Rain", "Heavy Fog"], n_samples, p=[0.6, 0.25, 0.1, 0.05])
     hours = np.random.randint(0, 24, n_samples)
     
-    # 2. Define the logical rules for what causes a delay (The model will learn these automatically)
+    
     delays = []
     for i in range(n_samples):
-        delay_chance = 0.10 # Base 10% chance
+        delay_chance = 0.10 
         
         if weather[i] == "Heavy Fog": delay_chance += 0.70
         elif weather[i] == "Rain": delay_chance += 0.35
         
-        if hours[i] >= 18: delay_chance += 0.20 # Evening rush hour delays
-        if origins[i] == destinations[i]: delay_chance = 0.0 # Same city = no flight
+        if hours[i] >= 18: delay_chance += 0.20 
+        if origins[i] == destinations[i]: delay_chance = 0.0 
             
-        # Determine final status based on probability
+        
         is_delayed = 1 if np.random.rand() < delay_chance else 0
         delays.append(is_delayed)
         
@@ -54,16 +49,16 @@ def train_model():
         "Delayed": delays
     })
     
-    # Remove rows where Origin == Destination
+    
     df = df[df["Origin"] != df["Destination"]].reset_index(drop=True)
     
-    # 3. Preprocess Data: Convert text labels (Strings) into Numbers (Integers) for the ML model
+    
     encoders = {}
     for col in ["Airline", "Origin", "Destination", "Weather"]:
         encoders[col] = LabelEncoder()
         df[col] = encoders[col].fit_transform(df[col])
         
-    # 4. Train the Random Forest Model
+    
     X = df.drop("Delayed", axis=1)
     y = df["Delayed"]
     
@@ -74,9 +69,7 @@ def train_model():
 
 model, label_encoders, raw_data = train_model()
 
-# ------------------------------------------------------------------------------
-# STEP 3: User Interface for Inputs
-# ------------------------------------------------------------------------------
+
 st.sidebar.header("⚙️ Model Architecture")
 st.sidebar.write("**Algorithm:** Random Forest Classifier")
 st.sidebar.write("**Training Data:** 2,000 Historical Flights")
@@ -96,9 +89,7 @@ with col2:
     selected_weather = st.selectbox("Weather Conditions", ["Clear", "Cloudy", "Rain", "Heavy Fog"])
     selected_hour = st.slider("Departure Time (24-Hour Format)", 0, 23, 12)
 
-# ------------------------------------------------------------------------------
-# STEP 4: AI Prediction Logic
-# ------------------------------------------------------------------------------
+
 st.subheader("2. AI Prediction")
 
 if selected_origin == selected_dest:
@@ -107,7 +98,7 @@ else:
     if st.button("🔮 Predict Delay Probability", type="primary"):
         with st.spinner("Analyzing historical data..."):
             
-            # Encode user inputs exactly how the model was trained
+           
             input_data = {
                 "Airline": label_encoders["Airline"].transform([selected_airline])[0],
                 "Origin": label_encoders["Origin"].transform([selected_origin])[0],
@@ -118,11 +109,11 @@ else:
             
             input_df = pd.DataFrame([input_data])
             
-            # Get Probability (Returns array like [[% On Time, % Delayed]])
+          
             prediction_prob = model.predict_proba(input_df)[0]
             delay_probability = prediction_prob[1] * 100
             
-            # Display Results
+           
             if delay_probability > 50:
                 st.error(f"⚠️ **High Risk of Delay:** The AI predicts a {delay_probability:.1f}% chance this flight will be delayed.")
                 st.progress(int(delay_probability))
@@ -133,9 +124,7 @@ else:
                 st.success(f"✅ **Likely On Time:** The AI predicts only a {delay_probability:.1f}% chance of delay.")
                 st.progress(int(delay_probability))
 
-# ------------------------------------------------------------------------------
-# STEP 5: Educational Resources
-# ------------------------------------------------------------------------------
+
 st.markdown("---")
 st.header("📚 Presentation Talking Points")
 
